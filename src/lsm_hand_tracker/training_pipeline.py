@@ -3,6 +3,8 @@ from lsm_hand_tracker.processing.flatten import flatten_local_images
 from lsm_hand_tracker.processing.cleaning import clean_local_dataset
 from lsm_hand_tracker.processing.transformations import prepare_training_dataset
 from lsm_hand_tracker.training import train_model
+#Adding mlflow
+from lsm_hand_tracker.processing.log_mlflow import log_latest_classification_report
 
 
 def run_pipeline():
@@ -28,6 +30,9 @@ def run_pipeline():
 
     print("5) Training the model…")
     train_model()
+#Adding mlflow
+    print("6) Logging results to MLflow…")
+    log_latest_classification_report()
 
     print("✅ Pipeline complete!")
 
