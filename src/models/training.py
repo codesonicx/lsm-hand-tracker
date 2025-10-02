@@ -10,7 +10,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from lsm_hand_tracker import PROCESSED_DIR, MODELS_DIR, REPORTS_DIR, FIGURES_DIR
+from utils.path_config import PROCESSED_DIR, MODELS_DIR, REPORTS_DIR, FIGURES_DIR
 
 
 def load_balanced_data(path: Path = PROCESSED_DIR / 'gestures_balanced.csv') -> pd.DataFrame:

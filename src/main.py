@@ -1,8 +1,8 @@
-from lsm_hand_tracker.processing.data_extraction import data_extraction
-from lsm_hand_tracker.processing.flatten import flatten_local_images
-from lsm_hand_tracker.processing.cleaning import clean_local_dataset
-from lsm_hand_tracker.processing.transformations import prepare_training_dataset
-from lsm_hand_tracker.training import train_model
+from dataflow.data_extraction import data_extraction
+from dataflow.flatten import flatten_local_images
+from dataflow.cleaning import clean_local_dataset
+from dataflow.transformations import prepare_training_dataset
+from models.training import train_model
 
 
 def run_pipeline():

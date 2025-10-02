@@ -1,4 +1,4 @@
-from lsm_hand_tracker.processing.transformations import main
+from src.dataflow.transformations import main
 
 if __name__ == "__main__":
     main()

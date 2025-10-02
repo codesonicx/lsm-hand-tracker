@@ -2,7 +2,7 @@ import joblib
 import numpy as np
 from typing import Tuple, Any
 
-from lsm_hand_tracker import MODELS_DIR
+from utils.path_config import MODELS_DIR
 MODEL_FILE = MODELS_DIR / "gesture_classifier.joblib"
 
 _model: Any = None

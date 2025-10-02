@@ -1,4 +1,4 @@
-from lsm_hand_tracker.training import main
+from src.models.training import main
 
 if __name__ == "__main__":
     main()

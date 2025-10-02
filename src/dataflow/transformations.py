@@ -6,7 +6,7 @@ from sklearn.preprocessing import PowerTransformer, MinMaxScaler, FunctionTransf
 from sklearn.decomposition import PCA
 from imblearn.over_sampling import SMOTE
 
-from lsm_hand_tracker import INTERIM_DIR, MODELS_DIR, PROCESSED_DIR
+from utils.path_config import INTERIM_DIR, MODELS_DIR, PROCESSED_DIR
 
 INPUT_CSV      = INTERIM_DIR    / "gestures_clean.csv"
 PIPELINE_FILE  = MODELS_DIR     / "feature_pipeline.joblib"

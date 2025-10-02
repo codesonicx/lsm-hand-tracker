@@ -205,7 +205,7 @@ def write_failure_log(
 
 
 def data_extraction():
-    from lsm_hand_tracker import RAW_DIR, INTERIM_DIR, MODELS_DIR, REPORTS_DIR
+    from utils.path_config import RAW_DIR, INTERIM_DIR, MODELS_DIR, REPORTS_DIR
 
     image_records = gather_image_records(RAW_DIR)
     results, failed = generate_metadata_from_files(

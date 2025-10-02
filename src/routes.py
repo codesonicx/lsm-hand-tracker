@@ -5,15 +5,15 @@ import string
 import cv2
 import numpy as np
 
-from lsm_hand_tracker import RAW_DIR, MODELS_DIR
-from lsm_hand_tracker.processing.data_extraction import (
+from utils.path_config import RAW_DIR, MODELS_DIR
+from dataflow.data_extraction import (
     create_landmarker,
     process_one_image
 )
-from lsm_hand_tracker.processing.flatten import flatten_metadata
-from lsm_hand_tracker.processing.cleaning import clean_dataset
-from lsm_hand_tracker.processing.transformations import transform_features
-from lsm_hand_tracker.model import predict_label_proba
+from dataflow.flatten import flatten_metadata
+from dataflow.cleaning import clean_dataset
+from dataflow.transformations import transform_features
+from models.model import predict_label_proba
 
 app = FastAPI()
 app.add_middleware(
@@ -60,7 +60,9 @@ async def process_image(
 
     df_flat = flatten_metadata([metadata])
     clean_df = clean_dataset(df_flat).drop(columns=["label"])
-    X = transform_features(clean_df)
+    X_df = transform_features(clean_df)
+
+    X = X_df.values
 
     pred_label, confidence = predict_label_proba(X)
     print(f"Predicted label: {pred_label}, Confidence: {confidence:.2f}")
@@ -71,7 +73,8 @@ async def process_image(
         dest_dir = RAW_DIR / "review" / letter
 
     dest_dir.mkdir(parents=True, exist_ok=True)
-    save_path = dest_dir / image.filename
+    filename = image.filename if image.filename is not None else "uploaded_image.jpg"
+    save_path = dest_dir / filename
     save_path.write_bytes(content)
 
     return JSONResponse({
