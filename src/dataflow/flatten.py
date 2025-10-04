@@ -96,7 +96,7 @@ def write_flat_csv(
 
 
 def flatten_local_images():
-    from utils.path_config import INTERIM_DIR
+    from src.utils.path_config import INTERIM_DIR
     records = load_metadata(INTERIM_DIR / "gestures.json")
     df = flatten_metadata(records)
     write_flat_csv(df, INTERIM_DIR / "gestures_flat.csv")

@@ -2,7 +2,7 @@ import joblib
 import numpy as np
 from typing import Tuple, Any
 
-from utils.path_config import MODELS_DIR
+from src.utils.path_config import MODELS_DIR
 MODEL_FILE = MODELS_DIR / "gesture_classifier.joblib"
 
 _model: Any = None

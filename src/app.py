@@ -5,15 +5,15 @@ import string
 import cv2
 import numpy as np
 
-from utils.path_config import RAW_DIR, MODELS_DIR
-from dataflow.data_extraction import (
+from src.utils.path_config import RAW_DIR, MODELS_DIR
+from src.dataflow.data_extraction import (
     create_landmarker,
     process_one_image
 )
-from dataflow.flatten import flatten_metadata
-from dataflow.cleaning import clean_dataset
-from dataflow.transformations import transform_features
-from models.model import predict_label_proba
+from src.dataflow.flatten import flatten_metadata
+from src.dataflow.cleaning import clean_dataset
+from src.dataflow.transformations import transform_features
+from src.models.model import predict_label_proba
 
 app = FastAPI()
 app.add_middleware(

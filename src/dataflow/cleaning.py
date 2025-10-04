@@ -106,9 +106,9 @@ def save_dataset(
     print(f"Wrote cleaned data with {len(df)} rows to {output_path}")
 
 def clean_local_dataset():
-    from utils.path_config import INTERIM_DIR
+    from src.utils.path_config import INTERIM_DIR
     input_path = INTERIM_DIR / "gestures_flat.csv"
-    output_path = INTERIM_DIR / "gestures_cleaned.csv"
+    output_path = INTERIM_DIR / "gestures_clean.csv"
 
     df = load_dataset(input_path)
     df = clean_dataset(df)

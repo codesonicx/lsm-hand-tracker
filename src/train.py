@@ -1,8 +1,8 @@
-from dataflow.data_extraction import data_extraction
-from dataflow.flatten import flatten_local_images
-from dataflow.cleaning import clean_local_dataset
-from dataflow.transformations import prepare_training_dataset
-from models.training import train_model
+from src.dataflow.data_extraction import data_extraction
+from src.dataflow.flatten import flatten_local_images
+from src.dataflow.cleaning import clean_local_dataset
+from src.dataflow.transformations import prepare_training_dataset
+from src.models.training import train_model
 
 
 def run_pipeline():
@@ -17,19 +17,19 @@ def run_pipeline():
     print("1) Generating metadata…")
     data_extraction()
 
-    print("2) Flattening metadata to CSV…")
+    print("\n2) Flattening metadata to CSV…")
     flatten_local_images()
 
-    print("3) Cleaning the dataset…")
+    print("\n3) Cleaning the dataset…")
     clean_local_dataset()
 
-    print("4) Transforming and balancing features…")
+    print("\n4) Transforming and balancing features…")
     prepare_training_dataset()
 
-    print("5) Training the model…")
+    print("\n5) Training the model…")
     train_model()
 
-    print("✅ Pipeline complete!")
+    print("\n✅ Pipeline complete!")
 
 
 def main():
