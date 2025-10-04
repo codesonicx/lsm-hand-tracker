@@ -1,37 +1,32 @@
 FROM python:3.10-slim
 
-# Install OS-level libs that cv2 needs (libGL.so.1)
+# Install OS-level libs that cv2 needs
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       libgl1 \
       libglib2.0-0 \
  && rm -rf /var/lib/apt/lists/*
 
-# Directory of workspace
+# Set working directory
 WORKDIR /app
 
-# install UV for dependency management
+# Install uv for dependency management
 RUN pip install --no-cache-dir uv
 
-# Copy the configuration for dependency to cache the layer
+# Copy dependency configs first (to leverage Docker cache)
 COPY pyproject.toml uv.lock ./
-COPY src ./src
-COPY models ./models
 
-# Sync and install dependencies + the package (editable)
-RUN uv sync --locked --no-dev --no-editable
+# Install dependencies
+RUN uv sync --no-dev --no-editable
 
-# Copy the rest of the code
+# Copy project files
 COPY . .
 
-# Environment variable for your application
+# Environment variables
 ENV LSM_BASE=/app
 
-# Expose the Uvicorn port
+# Expose FastAPI/Uvicorn port
 EXPOSE 8000
 
-# Start with uv run, which automatically activates the environment
-# shell form so $PORT is substituted at runtime
-CMD uv run uvicorn src.routes:app  \
-    --host 0.0.0.0 \
-    --port ${PORT:-8000}
+# Run FastAPI with uvicorn (pointing to your app inside src/routes.py)
+CMD ["uv", "run", "uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000"]
