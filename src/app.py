@@ -1,19 +1,20 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
 import string
-import cv2
-import numpy as np
+from io import BytesIO
 
-from src.utils.path_config import RAW_DIR, MODELS_DIR
-from src.dataflow.data_extraction import (
-    create_landmarker,
-    process_one_image
+import numpy as np
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from PIL import Image
+
+from src.core.image_loader import (
+    process_one_image,
 )
-from src.dataflow.flatten import flatten_metadata
-from src.dataflow.cleaning import clean_dataset
-from src.dataflow.transformations import transform_features
-from src.models.model import predict_label_proba
+from src.core.mediapipe import create_landmarker
+from src.core.preprocssing import clean_dataset, flatten_metadata
+from src.core.transformations import preprocess_for_inference
+from src.model import predict_label_proba
+from src.utils.path_config import MODELS_DIR, RAW_DIR
 
 app = FastAPI()
 app.add_middleware(
@@ -27,15 +28,14 @@ app.add_middleware(
 VALID_LETTERS = set(string.ascii_uppercase) | {"Ñ"}
 LANDMARKER = create_landmarker(MODELS_DIR / "hand_landmarker.task")
 
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}
 
+
 @app.post("/process/")
-async def process_image(
-    label: str = Form(...),
-    image: UploadFile = File(...)
-):
+async def process_image(label: str = Form(...), image: UploadFile = File(...)):
     """
     Process an image upload and extract hand landmarks.
     - `label`: The label for the image, must be a single uppercase letter or 'Ñ'.
@@ -46,13 +46,14 @@ async def process_image(
     if letter not in VALID_LETTERS:
         raise HTTPException(400, detail=f"Invalid label: '{label}'")
     content = await image.read()
-    arr = np.frombuffer(content, dtype=np.uint8)
-    bgr = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-    
-    if bgr is None:
+    pil_img = Image.open(BytesIO(content))
+    pil_img = pil_img.convert("RGB")
+    rgb = np.array(pil_img)
+
+    if rgb is None:
         raise HTTPException(422, detail="Could not decode image.")
     try:
-        metadata = process_one_image(letter, bgr, LANDMARKER)
+        metadata = process_one_image(letter, rgb, LANDMARKER)
     except Exception as e:
         raise HTTPException(500, detail=f"Error during detection: {e}")
     if metadata is None:
@@ -60,7 +61,7 @@ async def process_image(
 
     df_flat = flatten_metadata([metadata])
     clean_df = clean_dataset(df_flat).drop(columns=["label"])
-    X_df = transform_features(clean_df)
+    X_df = preprocess_for_inference(clean_df)
 
     X = X_df.values
 
@@ -77,9 +78,11 @@ async def process_image(
     save_path = dest_dir / filename
     save_path.write_bytes(content)
 
-    return JSONResponse({
-        "detected_as":  metadata["label"],
-        "predicted_as": pred_label,
-        "confidence":   confidence,
-        "metadata":     metadata
-    })
+    return JSONResponse(
+        {
+            "detected_as": metadata["label"],
+            "predicted_as": pred_label,
+            "confidence": confidence,
+            "metadata": metadata,
+        }
+    )
