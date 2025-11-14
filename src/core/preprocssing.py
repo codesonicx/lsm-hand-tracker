@@ -1,0 +1,148 @@
+from typing import Any, Dict
+
+import numpy as np
+import pandas as pd
+
+
+def flatten_metadata(records: list[Dict[str, Any]]) -> pd.DataFrame:
+    """
+    Flatten the metadata records into a DataFrame with one row per image.
+    """
+
+    # Build a flat list of dicts
+    flat_rows = []
+    expected_fingers = ("thumb", "index", "middle", "ring", "pinky")
+    num_landmarks = 21
+
+    for rec in records:
+        # Base metadata
+        row = {
+            "file_name": rec["file_name"],
+            "label": rec["label"],
+            "width": rec["image_size"][0],
+            "height": rec["image_size"][1],
+            "hand_count": rec["hand_count"],
+            # Handedness as one-hot flags
+            "handedness_left": int("left" in rec["handedness"]),
+            "handedness_right": int("right" in rec["handedness"]),
+            # Confidence per side
+            "confidence_left": rec["hand_confidence"]["left"],
+            "confidence_right": rec["hand_confidence"]["right"],
+        }
+
+        # Flatten raw landmarks: left_x0,left_y0,left_z0,…, right_x20,right_y20,right_z20
+        for side in ("left", "right"):
+            lms = rec["landmarks"].get(side, [])
+            if lms:
+                for idx, lm in enumerate(lms):
+                    if (
+                        idx < num_landmarks
+                    ):  # Ensure we don't go out of bounds if data is malformed
+                        row[f"{side}_x{idx}"] = lm.get("x", float("nan"))
+                        row[f"{side}_y{idx}"] = lm.get("y", float("nan"))
+                        row[f"{side}_z{idx}"] = lm.get("z", float("nan"))
+
+                # Fill any remaining landmark columns for this side with NaN if fewer than num_landmarks were provided
+                for idx in range(len(lms), num_landmarks):
+                    row[f"{side}_x{idx}"] = float("nan")
+                    row[f"{side}_y{idx}"] = float("nan")
+                    row[f"{side}_z{idx}"] = float("nan")
+
+            else:  # If no landmarks for this side, explicitly add NaN columns
+                for idx in range(num_landmarks):
+                    row[f"{side}_x{idx}"] = float("nan")
+                    row[f"{side}_y{idx}"] = float("nan")
+                    row[f"{side}_z{idx}"] = float("nan")
+
+        # Flatten engineered distances and angles
+        for side_key in ("left", "right"):  # Iterate over expected sides
+            feats = rec["engineered"].get(side_key)  # Get can return None
+
+            if (
+                not feats
+            ):  # Covers if side_key was missing or if feats was an empty dict/list
+                for finger in expected_fingers:
+                    row[f"{side_key}_{finger}_dist"] = float("nan")
+                    row[f"{side_key}_{finger}_angle"] = float("nan")
+            else:
+                # Distances Data
+                actual_distances = feats.get("distances", {})
+                for finger in expected_fingers:
+                    # Use .get with a default of NaN for each specific distance name (e.g., "thumb_dist")
+                    row[f"{side_key}_{finger}_dist"] = actual_distances.get(
+                        f"{finger}_dist", float("nan")
+                    )
+
+                # Angles Data
+                actual_angles = feats.get("angles", {})
+                for finger in expected_fingers:
+                    # Use .get with a default of NaN for each specific angle name (e.g., "thumb_angle")
+                    row[f"{side_key}_{finger}_angle"] = actual_angles.get(
+                        f"{finger}_angle", float("nan")
+                    )
+
+        flat_rows.append(row)
+
+    return pd.DataFrame(flat_rows)
+
+
+def clean_dataset(df):
+    """
+    Cleaning pipeline:
+    1. Drop image metadata columns
+    2. Choose best hand (left vs right) based on confidence
+    3. Unify all hand columns into single set of features
+    """
+
+    # Remove columns we don't need
+    df = df.drop(columns=["file_name", "width", "height"])
+
+    # Figure out which hand to use
+    df["confidence_left"] = df["confidence_left"].fillna(0)
+    df["confidence_right"] = df["confidence_right"].fillna(0)
+    df["best_hand"] = np.where(
+        df["confidence_left"] >= df["confidence_right"], "left", "right"
+    )
+
+    # Unify left/right columns into single columns
+    df = unify_hands(df)
+
+    return df
+
+
+def unify_hands(df):
+    """
+    Merge left_x0, right_x0 → x0 (using best_hand)
+    Merge left_thumb_dist, right_thumb_dist → thumb_dist
+    etc.
+    """
+
+    is_left = df["best_hand"] == "left"
+
+    # Build clean dataframe
+    clean = pd.DataFrame(
+        {
+            "label": df["label"],
+            "handedness": df["best_hand"],
+        }
+    )
+
+    # Add 21 landmarks × 3 axes = 63 coordinate columns
+    for axis in "xyz":
+        for landmark_idx in range(21):
+            left_col = f"left_{axis}{landmark_idx}"
+            right_col = f"right_{axis}{landmark_idx}"
+            clean[f"{axis}{landmark_idx}"] = np.where(
+                is_left, df[left_col], df[right_col]
+            )
+
+    # Add 5 fingers × 2 features = 10 finger measurement columns
+    for finger in ["thumb", "index", "middle", "ring", "pinky"]:
+        for feature in ["dist", "angle"]:
+            left_col = f"left_{finger}_{feature}"
+            right_col = f"right_{finger}_{feature}"
+            clean[f"{finger}_{feature}"] = np.where(
+                is_left, df[left_col], df[right_col]
+            )
+
+    return clean
