@@ -1,4 +1,4 @@
-from src.models.training import main
+from src.training.training import main
 
 if __name__ == "__main__":
     main()
