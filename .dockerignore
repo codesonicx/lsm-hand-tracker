@@ -8,3 +8,29 @@ reports/
 tests/
 .git
 .env
+
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.pytest_cache
+.coverage
+*.egg-info
+.git
+.github
+.vscode
+.idea
+
+# Exclude training and data files
+src/data/
+data/
+notebooks/
+tests/
+*.csv
+*.json
+*.png
+*.jpg
+*.jpeg
+
+# Keep only what's needed
+!models/*.joblib
